@@ -1,0 +1,87 @@
+version: '3'
+
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:9
+    container_name: forgejo
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - FORGEJO__database__DB_TYPE=postgres
+      - FORGEJO__database__HOST=db:5432
+      - FORGEJO__database__NAME=forgejo
+      - FORGEJO__database__USER=forgejo
+      - FORGEJO__database__PASSWD=forgejo_password
+      # Enable Docker registry
+      - FORGEJO__packages__ENABLED=true
+      - FORGEJO__actions__ENABLED=true
+      # allow migrations from here...
+      #- FORGEJO__migrations__ALLOWED_DOMAINS=<MYIP>
+    restart: always
+    networks:
+      - forgejo
+    volumes:
+      - forgejo-data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      # MOUNT SSH KEYS for syncing from servers. Not need if you don't have to.
+      - ${PWD}/data/forgejo/git/.ssh:/data/git/.ssh
+    ports:
+      - "3000:3000"
+      - "222:22"
+      - "5000:5000" # Port for container registry
+    depends_on:
+      - db
+
+  db:
+    image: postgres:14
+    container_name: forgejo-db
+    restart: always
+    environment:
+      - POSTGRES_USER=forgejo
+      - POSTGRES_PASSWORD=forgejo_password
+      - POSTGRES_DB=forgejo
+    networks:
+      - forgejo
+    volumes:
+      - forgejo-db:/var/lib/postgresql/data
+
+  forgejo-runner:
+    image: gitea/act_runner:latest
+    container_name: forgejo-runner
+    restart: always
+    networks:
+      - forgejo
+    depends_on:
+      - forgejo
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - forgejo-runner-data:/data
+    environment:
+      - GITEA_INSTANCE_URL=http://forgejo:3000
+      #MY APP TOKEN FROM FORGEJO/GITEA ADMIN SETTINGS. Must define after first configuration
+      - GITEA_RUNNER_REGISTRATION_TOKEN=<MYTOKEN>
+
+networks:
+  forgejo:
+    external: false
+
+volumes:
+  forgejo-data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${PWD}/data/forgejo
+  forgejo-db:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${PWD}/data/db
+  forgejo-runner-data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${PWD}/data/runner
