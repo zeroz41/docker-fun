@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  minecraft:
+    image: itzg/minecraft-server
+    container_name: minecraft_server
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - "25565:25565"
+      - "25575:25575"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      EULA: "TRUE"
+      VERSION: "1.20.1"
+      TYPE: FABRIC
+      MODRINTH_PROJECTS: "fabric-api,lithium,origins,pehkui,xaeros-minimap,origins-plus-plus"
+      MODRINTH_DOWNLOAD_DEPENDENCIES: required
+      REMOVE_OLD_MODS: "true"
+      MEMORY: 8G
+      INIT_MEMORY: 1G
+      MAX_MEMORY: 8G
+      SERVER_NAME: "Minecraft"
+      DIFFICULTY: normal
+      MODE: survival
+      MOTD: "My Server"
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: blahblah123
+      RCON_PORT: 25575
+      ONLINE_MODE: "true"
+      VIEW_DISTANCE: 12
+      SIMULATION_DISTANCE: 10
+      DEBUG: "true"
+    volumes:
+      - minecraft_data:/data
+
+volumes:
+  minecraft_data:
